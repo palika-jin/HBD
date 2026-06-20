@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Happy Birthday</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        * { 
+            box-sizing: border-box; margin: 0; padding: 0; font-family: 'Kanit', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body { 
+            background: linear-gradient(180deg, #d3f0fe 0%, #e3fdf1 40%, #ffe9f2 80%, #d8effe 100%); 
+            color: #333; display: flex; justify-content: center; align-items: flex-start;
+            min-height: 100vh; width: 100vw; overflow-x: hidden;
+        }
+
+        .fullscreen-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(180deg, #ffe9f2 0%, #d3f0fe 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 99999; overflow: hidden; padding: 30px; text-align: center;
+        }
+
+        .reveal-container {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            width: 100%; height: 100%;
+        }
+        
+        #reveal-image {
+            width: 90%; 
+            max-width: 350px;
+            filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.2)); 
+            transform: scale(0.3) rotate(-8deg);
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 25px;
+        }
+        
+        #reveal-image.show-image { transform: scale(1) rotate(0deg); opacity: 1; }
+
+        .balloon-element {
+            position: absolute; bottom: -150px; width: 65px; height: 80px;
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+            cursor: pointer; animation: floatUp linear infinite; z-index: 10;
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.15), 2px 4px 10px rgba(0,0,0,0.1);
+            display: flex; justify-content: center; align-items: center;
+        }
+        .balloon-element::after {
+            content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+            border-left: 5px solid transparent; border-right: 5px solid transparent;
+            border-top: 8px solid currentColor;
+        }
+        .balloon-element::before {
+            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            width: 1.5px; height: 60px; background-color: currentColor; opacity: 0.5;
+        }
+        
+        .balloon-face {
+            font-size: 26px; margin-top: -5px; pointer-events: none; user-select: none;
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", sans-serif;
+            filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.1));
+        }
+
+        .cake-container { position: relative; width: 160px; height: 160px; margin: 30px 0; }
+        .cake-emoji { font-size: 100px; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); text-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .candle-stick { width: 8px; height: 35px; background: #ffedb3; border-radius: 4px; position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); border: 1px solid #ffcc66; }
+        .candle-flame {
+            width: 14px; height: 22px; background: #ff9900;
+            border-radius: 50% 50% 20% 20% / 60% 60% 40% 40%;
+            position: absolute; bottom: 122px; left: 50%; transform: translateX(-50%);
+            box-shadow: 0 0 15px #ff9900; animation: flicker 0.1s infinite alternate; cursor: pointer;
+        }
+
+        .mic-status { font-size: 13px; font-weight: 500; color: #666; margin-top: 15px; background: rgba(255,255,255,0.7); padding: 8px 16px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+
+        .container { width: 100%; max-width: 420px; padding: 30px 20px; display: flex; flex-direction: column; }
+        .header { text-align: left; margin-bottom: 35px; position: relative; padding-left: 5px; }
+        .header h1 { color: #55a8e2; font-size: 2.8rem; line-height: 1.15; font-weight: 600; }
+        .header span.sparkle { position: absolute; color: #ff8fb3; font-size: 1.5rem; }
+        .sparkle-1 { top: -10px; right: 30px; }
+        .sparkle-2 { top: 35px; left: -10px; font-size: 1.1rem !important; }
+
+        .photo-stack { position: relative; width: 210px; height: 250px; margin: 0 auto; cursor: pointer; touch-action: manipulation; }
+        .polaroid { position: absolute; width: 100%; height: 100%; background: white; padding: 10px 10px 35px 10px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease; transform-origin: bottom center; }
+        .polaroid img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; pointer-events: none; }
+        .polaroid.slide-out { transform: translateX(130px) rotate(22deg) scale(0.85) !important; opacity: 0; }
+
+        .cursive-caption { font-family: 'Mali', cursive; font-size: 19px; font-weight: 600; color: #ff6b97; text-align: center; margin-top: 35px; margin-bottom: 5px; line-height: 1.4; text-shadow: 1px 1px 2px rgba(0,0,0,0.03); position: relative; z-index: 5; }
+        .tap-hint { font-size: 11px; color: #888; text-align: center; margin-bottom: 35px; }
+
+        .widget-player { background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%); border-radius: 20px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 8px 22px rgba(255, 126, 95, 0.25); margin-bottom: 35px; color: #fff; width: 100%; }
+        .widget-left { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; flex: 1; }
+        .widget-info { margin-bottom: 20px; } 
+        .widget-info h3 { font-size: 17px; font-weight: 600; margin-bottom: 4px; line-height: 1.2; text-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .widget-info p { font-size: 12px; opacity: 0.85; }
+        .widget-controls { display: flex; gap: 22px; font-size: 18px; align-items: center; }
+        .widget-controls i { cursor: pointer; transition: 0.2s; }
+        
+        .widget-right { position: relative; width: 110px; height: 110px; display: flex; justify-content: center; align-items: center; margin-left: 10px; }
+        .vinyl-record-mini { width: 110px; height: 110px; border-radius: 50%; background: conic-gradient(from 0deg, rgba(255,255,255,0.1) 0deg, rgba(255,255,255,0) 40deg, rgba(255,255,255,0) 140deg, rgba(255,255,255,0.1) 180deg, rgba(255,255,255,0) 220deg, rgba(255,255,255,0) 320deg, rgba(255,255,255,0.1) 360deg), repeating-radial-gradient(circle, #1a1a1a 0px, #1a1a1a 2px, #2b2b2b 3px, #1a1a1a 4px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; position: relative; border: 1.5px solid #111; }
+        .vinyl-record-mini::before { content: ''; position: absolute; width: 56px; height: 56px; border-radius: 50%; border: 1px solid #111; z-index: 1; }
+        .vinyl-center-label-mini { width: 50px; height: 50px; border-radius: 50%; background: url('https://lh3.googleusercontent.com/d/1nmjkof_kPd42bIsj1FcBMiAWCeSRQDXn') center/cover; z-index: 2; border: 1.5px solid #fff; }
+        
+        /* แก้ไขเข็มสลับด้านและองศาตามชุดที่ 2 */
+        .vinyl-tonearm-mini { 
+            position: absolute; top: -8px; left: -5px; width: 30px; height: 75px; 
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="35" height="85" viewBox="0 0 35 85"><circle cx="12" cy="12" r="10" fill="%23111"/><circle cx="12" cy="12" r="5" fill="%23333"/><path d="M12 12 L17 65 L27 75" fill="none" stroke="%23ddd" stroke-width="4" stroke-linecap="round"/><rect x="22" y="70" width="8" height="15" rx="2" fill="%23111" transform="rotate(-30 22 70)"/></svg>') no-repeat; 
+            background-size: contain; transform-origin: 12px 12px; 
+            transform: rotate(32deg); /* ค่าเริ่มต้นตอนหยุดเพลง */
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 3; 
+        }
+        
+        .tonearm-playing { transform: rotate(5deg) !important; /* ตอนเพลงเล่น */ } 
+        .vinyl-playing { animation: rotateRecord 4s linear infinite; }
+
+        .message-box { background: rgba(255, 255, 255, 0.85); padding: 22px; border-radius: 16px; font-size: 14px; line-height: 1.65; color: #444; box-shadow: 0 4px 15px rgba(0,0,0,0.02); margin-bottom: 35px; width: 100%; }
+        .message-box p { margin-bottom: 14px; text-align: left; }
+        .message-box p:last-child { margin-bottom: 0; }
+
+        .section-title { color: #ff8fb3; font-size: 26px; font-weight: 600; margin-bottom: 12px; text-align: center; }
+        .passcode-area { margin-bottom: 35px; text-align: center; width: 100%; }
+        .passcode-label { color: #ff8fb3; font-size: 13px; margin-bottom: 15px; }
+        .passcode-inputs { display: flex; gap: 12px; justify-content: center; }
+        .passcode-inputs input { width: 46px; height: 46px; border-radius: 12px; border: 2px solid #ff8fb3; background: white; text-align: center; font-size: 24px; color: #ff8fb3; outline: none; transition: all 0.3s; }
+        .passcode-inputs input:focus { background: #fff0f5; box-shadow: 0 0 8px rgba(255,143,179,0.3); }
+
+        @keyframes rotateRecord { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes floatUp { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-120vh) rotate(15deg); opacity: 0; } }
+        @keyframes flicker { 0% { transform: translateX(-50%) scale(1) rotate(-1deg); background: #ffaa00; } 100% { transform: translateX(-50%) scale(1.15) rotate(2deg); background: #ff6600; box-shadow: 0 0 20px #ff6600; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popUpBounce { 0% { transform: scale(0.2); opacity: 0; } 60% { transform: scale(1.08); opacity: 0.9; } 80% { transform: scale(0.96); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        
+        .shake-error { animation: shake 0.4s ease-in-out; }
+        .input-error { border-color: red !important; color: red !important; }
+        .pop-up-card { animation: popUpBounce 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.2) both; }
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.8s ease-out both; }
+
+        .gift-section { text-align: center; margin-top: 25px; margin-bottom: 15px; cursor: pointer; transition: 0.2s; }
+        .gift-section h3 { color: #ff8fb3; margin-bottom: 10px; font-weight: 500; font-size: 17px; }
+
+        .cards-container { position: relative; width: 100%; margin-bottom: 10px; }
+        .cards-wrapper { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding: 15px 5px 25px 5px; scroll-behavior: smooth; }
+        .cards-wrapper::-webkit-scrollbar { display: none; }
+        .card { flex: 0 0 100%; scroll-snap-align: center; background: #fff; border-radius: 18px; padding: 20px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); position: relative; display: flex; flex-direction: column; }
+        .card::before { content: '💌'; position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 22px; z-index: 10; }
+        
+        .card-img-container { width: 100%; height: 170px; border-radius: 12px; overflow: hidden; margin-bottom: 15px; }
+        .card-img-container img { width: 100%; height: 100%; object-fit: cover; }
+        .card-text { font-size: 13px; color: #555; text-align: center; line-height: 1.6; }
+        .card textarea { flex-grow: 1; min-height: 180px; width: 100%; border: none; resize: none; outline: none; background: transparent; font-size: 14px; line-height: 1.8; color: #555; background-image: repeating-linear-gradient(transparent, transparent 27px, #ffebf0 28px); }
+
+        .carousel-nav { display: flex; justify-content: center; gap: 15px; margin-top: 5px; margin-bottom: 25px; }
+        .nav-btn { background: #ff8fb3; color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-size: 15px; transition: 0.2s; box-shadow: 0 4px 10px rgba(255, 143, 179, 0.3); font-weight: 500; letter-spacing: 0.5px;}
+        .nav-btn:active { transform: scale(0.95); background: #ff6b97; }
+
+        .game-box { background: rgba(255, 255, 255, 0.9); padding: 22px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); margin-top: 25px; text-align: center; border: 2px dashed #ff8fb3; width: 100%; }
+        .game-area { width: 100%; height: 180px; background: #fff0f5; border-radius: 12px; position: relative; overflow: hidden; margin-top: 15px; display: none; border: 1px solid #ffb6c1;}
+        .game-stats { display: flex; justify-content: space-between; padding: 8px 12px; font-size: 12px; font-weight: 500; color: #444; }
+        #target-heart { position: absolute; font-size: 32px; cursor: pointer; user-select: none; transition: transform 0.1s; }
+
+        .spotify-container { margin-top: 25px; display: none; width: 100%; }
+        .spotify-header-text { text-align: center; margin-bottom: 12px; }
+        .spotify-player { background: #181818; border-radius: 18px; padding: 20px; color: #fff; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .spotify-album { width: 120px; height: 120px; border-radius: 8px; margin: 0 auto 15px; background: url('https://lh3.googleusercontent.com/d/1C88Hlgy6kpY4qarVXMAVk5eKGYMFMT5x') center/cover; }
+        .spotify-info { margin-bottom: 20px; }
+        .spotify-info h4 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+        .spotify-info p { font-size: 12px; color: #b3b3b3; }
+        .s-progress-container { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #b3b3b3; margin-bottom: 15px; }
+        .s-progress-bar { flex-grow: 1; height: 4px; background: #4f4f4f; border-radius: 2px; position: relative; }
+        .s-progress { width: 0%; height: 100%; background: #1db954; border-radius: 2px; }
+        .s-controls { display: flex; justify-content: center; align-items: center; gap: 22px; color: #b3b3b3; font-size: 16px; }
+        .s-play-btn { width: 50px; height: 55px; background: #1db954; color: #000; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" src="https://raw.githubusercontent.com/palika-jin/HBD/main/Happy%20Birthday%20(Piano%20Version).mp3" loop></audio>
+    <audio id="secret-voice" src="https://raw.githubusercontent.com/palika-jin/HBD/main/%E0%B8%82%E0%B8%AD%E0%B8%9A%E0%B8%84%E0%B8%B8%E0%B8%93%E0%B9%82%E0%B8%A5%E0%B8%81%E0%B8%99%E0%B8%B5%E0%B9%89%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B9%80%E0%B8%98%E0%B8%AD.mp3"></audio>
+    <audio id="sfx-pop" src="https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3" preload="auto"></audio>
+    <audio id="sfx-win" src="https://assets.mixkit.co/active_storage/sfx/1936/1936-preview.mp3" preload="auto"></audio>
+    <audio id="sfx-photo" src="https://assets.mixkit.co/active_storage/sfx/1133/1133-preview.mp3" preload="auto"></audio> 
+    <audio id="sfx-pass-ok" src="https://assets.mixkit.co/active_storage/sfx/253/253-preview.mp3" preload="auto"></audio> 
+    <audio id="sfx-pass-err" src="https://assets.mixkit.co/active_storage/sfx/2849/2849-preview.mp3" preload="auto"></audio> 
+    <audio id="sfx-gift" src="https://assets.mixkit.co/active_storage/sfx/871/871-preview.mp3" preload="auto"></audio> 
+
+    <div id="balloon-screen" class="fullscreen-screen">
+        <h3 id="balloon-instruction" style="color: #ff6b97; margin-bottom: 20px; font-weight: 500; text-shadow: 0 1px 2px rgba(255,255,255,0.8);">
+            🎈เนมรู้เปล่าว่าในลูกโป่งมีข้อความลับซ่อนอยู่อะ!?<br>ลองจิ้ม <span style="color: #e63946; font-weight: bold; font-size: 22px;">"ลูกโป่งสี?"</span> ให้แตกเพื่อเปิดอ่านดูดิ!
+        </h3>
+        
+        <div class="reveal-container hidden" id="reveal-container">
+            <img id="reveal-image" src="https://lh3.googleusercontent.com/d/1YFmU2qInzSOwiMy3mYQ-gJSo6wNEhx9r" alt="Happy Birthday" />
+            <button id="to-cake-btn" class="nav-btn hidden" onclick="goToCakeScreen()" style="margin-top: 15px;">ไปเป่าเค้กกันต่อเลย 🎂</button>
+        </div>
+    </div>
+
+    <div id="cake-screen" class="fullscreen-screen hidden">
+        <h2 style="color: #ff6b97; font-weight: 600; margin-bottom: 10px;">🎂 อธิษฐานแล้วเป่าเค้กกัน!</h2>
+        <div class="cake-container">
+            <div class="cake-emoji">🎂</div>
+            <div class="candle-stick"></div>
+            <div class="candle-flame" id="candle-flame" onclick="extinguishCandle()"></div>
+        </div>
+        <p class="mic-status" id="mic-status">🎤 กำลังเปิดระบบตรวจจับลมเป่า...</p>
+        <p style="font-size: 11px; color: #888; margin-top: 15px; padding: 0 20px;">(เป่าลมแรงๆ ใส่รูไมโครโฟนโทรศัพท์ได้เลย หรือถ้าไมค์ไม่ทำงาน ให้ใช้นิ้วจิ้มที่เปลวไฟเพื่อเป่าแทนได้นะจ๊ะ)</p>
+        <button id="enter-site-btn" class="nav-btn hidden" onclick="enterMainSite()" style="margin-top: 25px; background: #1db954; animation: popUpBounce 0.5s;">เปิดอ่านการ์ดวันเกิด 💖</button>
+    </div>
+
+    <div class="container hidden" id="main-container">
+        <div class="header">
+            <span class="sparkle sparkle-1">✦</span>
+            <span class="sparkle sparkle-2">✦</span>
+            <h1>สุขสันต์<br>วันเกิด<br>น้องเนม 🎉</h1>
+        </div>
+
+        <div class="photo-stack" id="polaroid-container" onclick="nextPhoto()">
+            <div class="polaroid" style="transform: rotate(6deg);"><img src="https://lh3.googleusercontent.com/d/1wOepQHGAvTY29oWvw-ChvdoThAj82_6w" alt="Photo 4"></div>
+            <div class="polaroid" style="transform: rotate(-4deg);"><img src="https://lh3.googleusercontent.com/d/1BBb-C4p1oJIRUU0GtMY_6PQhyoD9dUg6" alt="Photo 3"></div>
+            <div class="polaroid" style="transform: rotate(3deg);"><img src="https://lh3.googleusercontent.com/d/1aq-nsc6NYHKWtoONKEy4b58o9rmncfFk" alt="Photo 2"></div>
+            <div class="polaroid" style="transform: rotate(-5deg);"><img src="https://lh3.googleusercontent.com/d/1Mor8dpnqQRYaktRM-bGphPpCkkJuyvLD" alt="Photo 1"></div>
+        </div>
+        <p class="cursive-caption"style="text-align: center;">เติบโตมาอย่างดีเลยนะ<br><span style="font-size: 15px; font-weight: 400; color: #ff8fb3;">จากไอเด็กตัวกะเปี๊ยกในวันนั้น<br>โตมาเป็นไอเด็กเวรในวันนี้</span></p>
+        <p class="tap-hint">(แตะที่รูปเพื่อสับเปลี่ยนรูปถัดไป)</p>
+
+        <div class="widget-player">
+            <div class="widget-left">
+                <div class="widget-info">
+                    <h3>Happy Birthday to You</h3>
+                    <p>Jao Name</p>
+                </div>
+                <div class="widget-controls">
+                    <i class="fas fa-backward"></i>
+                    <div id="play-btn" style="width: 30px; text-align: center;"><i class="fas fa-play"></i></div>
+                    <i class="fas fa-forward"></i>
+                </div>
+            </div>
+            <div class="widget-right">
+                <div class="vinyl-record-mini" id="vinyl-record"><div class="vinyl-center-label-mini"></div></div>
+                <div class="vinyl-tonearm-mini" id="vinyl-tonearm"></div>
+            </div>
+        </div>
+
+        <div class="message-box">
+            <p>พี่มาช้าแต่พี่มานะน้อง! ขอโทษด้วยนะแก จินทำเสร็จไม่ทันวันเกิดอะ แต่เอาเป็นว่าแฮปย้อนหลังก็แล้วกันเนอะ อยากบอกว่าอันนี้ตั้งใจทำให้มากๆเลยนะ แอบคิดมาสักพักแล้วว่าปีนี้จะทำอะไรให้ดี เพราะก็แฮปมาหลายวิธีแล้ว จินหวังว่าแกจะชอบนะ</p>
+        </div>
+
+        <div class="passcode-area" id="passcode-section">
+            <div class="section-title">(っ’-’)╮=͟͟͞͞ 🍰💥(；゜ロ゜)</div>
+            <div class="passcode-label">ถ้าอยากรู้ว่ามีอะไร ก็ลองทายดูสิ🤪 </div>
+            <div class="passcode-inputs" id="passcode-container">
+                <input type="tel" maxlength="1" id="digit1" onkeyup="moveFocus(this, 'digit2')">
+                <input type="tel" maxlength="1" id="digit2" onkeyup="checkPasscode()">
+            </div>
+        </div>
+
+        <div id="secret-content" class="hidden fade-in">
+            <div class="text-center mt-4 mb-2"><h2 style="color: #ff8fb3; font-size: 20px;">คำอวยพรจากพี่จิน💕</h2></div>
+            <div class="message-box">
+                <p>สุขสันต์วันเกิดนะแก พอลองมานั่งนับปีเล่นๆ ปีนี้มันก็เข้าปีที่ 9 แล้วจริงดิ!? ที่เรารู้จักกันมา แอบตกใจอยู่นะ😱 แสดงว่าปีหน้าก็ครบ 10 ปีแล้วปะ เกินไปมุ้ย รู้สึกแก่เลยว่ะ </p>
+                <p>รู้ตัวไหมว่าแกบ่นบ่อยมากเลยว่า "เบื่อ" ดังนั้นจินขอให้แกได้มีเวลาพักผ่อนเยอะๆ และนอนหลับเต็มอิ่มในทุกๆ วันนะ🥺</p>
+                <p>แล้วก็ขอให้วันเกิดปีนี้ของแกเต็มไปด้วยมวลของความสุข และความสมหวังลอดทั้งปีเลย💫✨ อีกอย่างคือ ขอให้มีคนใจดีปล่อยบัตรราคาเป็นมิตรที่ไม่ใช่มิจจี้ ให้แกได้ไปดูพี่แจฮยอนนะ</p>
+                <p> </p>
+                <p>อยากบอกแกว่าจินดีใจมากๆ ที่ได้เป็นส่วนหนึ่งของเรื่องราวในชีวิตของแกนะ เอาจริงไม่อยากพิมพ์ประโยคนี้เลย...เอาเป็นว่าไม่พิมพ์ดีกว่า ขอจบด้วยการสุขสันต์วันเกิดอีกครั้งจ้า❤️</p>
+            </div>
+
+            <div class="gift-section" id="gift-box" onclick="openGift()">
+                <h3>แตะกล่องของขวัญด้านล่างเลยยยย</h3>
+                <div style="font-size: 90px; -webkit-user-select:none;">🎁</div>
+            </div>
+
+            <div id="cards-section" class="hidden fade-in">
+                <h3 class="text-center" style="color:#ff8fb3; margin-bottom:10px; font-size:14px;">ปัดหน้าจอ หรือกดปุ่มเลื่อนการ์ดได้เลยค่ะ 👉</h3>
+                <div class="cards-container">
+                    <div class="cards-wrapper" id="carousel-wrapper">
+                        <div class="card" id="first-card">
+                            <div class="card-img-container"><img src="https://lh3.googleusercontent.com/d/15AnGKIPW9CTHmUcFJLZaLhCLPNxNwmrh" alt="Memory 1"></div>
+                            <div class="card-text"><strong>To: น้องเนม</strong><br>อุ๊ยตายแล้ว!? เหมือนจะมีคนโดนตบหัว🤪 จะมาบอกว่าไม่ได้มอง ไม่ได้เห็น👀 ไม่ได้น้า อิอิ (ติดไว้ก่อน ถ้าเจอโดนแน่!) </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-img-container"><img src="https://lh3.googleusercontent.com/d/1ZTafey3LSZXY41Zx5WITaYVtsZxgeEHE" alt="Memory 2"></div>
+                            <div class="card-text">คนที่อยากไปเที่ยวที่สุด จินก็อยากไปลุยหลายๆ ที่ด้วยกันกับแกนะ แต่ก่อนอื่นเลย เราต้องว่างตรงกันก่อนเนอะ อีกหนึ่ง Bucket list ที่จินอยากทำให้ได้ก็คือ การได้ไปเที่ยวต่างประเทศด้วยกันสักครั้ง และพอกลับมาก็เลิกคบเป็นเพื่อนกันไปเลย แฮร่🤪 </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-img-container"><img src="https://lh3.googleusercontent.com/d/1Z7psnxrH2pbX6dVIoXqTdbFz9T18_aSe" alt="Memory 3"></div>
+                            <div class="card-text">Happy 26th Birthday! 🎉<br>อยู่เป็นรอยยิ้มและเสียงหัวเราะให้กันแบบนี้ไปนานๆ เลยนะ!😊🤣 รอเจอแกที่จะแก่ขึ้นอีกปีไม่ไหวละ ไว้เจอกันใหม่อีกทีปีหน้าน้าาา✨ ในวันที่น้องเนมอายุ 27 ปี พี่จินจะมาอวยพรให้อีกครั้งนะคะ...</div>
+                        </div>
+                        <div class="card">
+                            <div style="text-align: center; margin-bottom: 10px; color: #ff8fb3; font-weight: 500; font-size:14px;">ถึงตาน้องเนมเขียนบ้างแล้ว ✍️</div>
+                            <textarea id="recipient-note" placeholder="พิมพ์ความในใจลงตรงนี้ได้เลย (ระบบจะจำข้อความไว้ให้ในเครื่องนะ)..." oninput="saveNote()"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-nav">
+                    <button class="nav-btn" onclick="scrollCarousel(-1)"><i class="fas fa-chevron-left"></i> ย้อนกลับ</button>
+                    <button class="nav-btn" onclick="scrollCarousel(1)">ถัดไป <i class="fas fa-chevron-right"></i></button>
+                </div>
+
+                <div class="game-box" id="mission-box">
+                    <h3 style="color: #ff8fb3; margin-bottom: 6px;">🕵️‍♀️ ภารกิจลับด่านสุดท้าย!</h3>
+                    <p style="font-size: 12px; color: #555; margin-bottom: 12px;">หลุด!? "ไฟล์เสียงลับ" ถ้าอยากฟังต้องเล่นมินิเกม<br>จับหัวใจ❤️ ให้ครบ 10 ดวง ภายใน 26 วินาที สู้ๆจ้า!</p>
+                    <button class="nav-btn" id="start-game-btn" onclick="startGame()">เริ่มภารกิจเลย!</button>
+                    <div class="game-area" id="game-area">
+                        <div class="game-stats">
+                            <span>เวลา: <span id="game-time" style="color:red;">26</span> วินาที</span>
+                            <span>จับได้: <span id="game-score">0</span>/10</span>
+                        </div>
+                        <div id="target-heart" onclick="catchHeart()">❤️</div>
+                    </div>
+                </div>
+
+                <div class="spotify-container fade-in" id="spotify-container">
+                    <div class="spotify-header-text">
+                        <h3 style="color: #ff8fb3; margin-bottom: 4px;">🎉 เก่งมาก! ภารกิจสำเร็จ 🎉</h3>
+                        <p style="font-size: 12px; color: #555;">นี่คือไฟล์เสียงลับ (ชั่วคราว) ไฟล์เสียงลับจริงยังไม่มีเวลาทำ🤣 </p>
+                    </div>
+                    <div class="spotify-player">
+                        <div class="spotify-album"></div>
+                        <div class="spotify-info">
+                            <h4>ขอบคุณโลกนี้ที่มีเธอ</h4>
+                            <p>Playlist: Happy Birthday น้องเนม</p>
+                        </div>
+                        <div class="s-progress-container">
+                            <span id="s-current-time">0:00</span>
+                            <div class="s-progress-bar" id="s-progress-bar"><div class="s-progress" id="s-progress"></div></div>
+                            <span id="s-duration">0:00</span>
+                        </div>
+                        <div class="s-controls">
+                            <i class="fas fa-random"></i>
+                            <i class="fas fa-step-backward"></i>
+                            <div class="s-play-btn" id="s-play-btn" onclick="toggleSecretVoice()"><i class="fas fa-play" style="margin-left: 2px;"></i></div>
+                            <i class="fas fa-step-forward"></i>
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. ระบบ Safe Audio ---
+        function safePlayAudio(audioElement) {
+            if (audioElement) {
+                const playPromise = audioElement.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => console.log("รอการตอบสนองระบบเสียงจากเบราว์เซอร์"));
+                }
+            }
+        }
+
+        function playSound(id) {
+            const sound = document.getElementById(id);
+            if(sound) {
+                sound.currentTime = 0;
+                safePlayAudio(sound);
+            }
+        }
+
+        // --- 2. ระบบ Safe Confetti ---
+        function runConfetti(opts) {
+            if (typeof confetti === 'function') {
+                try { confetti(opts); } catch(e) {}
+            }
+        }
+
+        // --- 3. ลอจิกเกมจิ้มลูกโป่ง 3D ---
+        let gameWon = false;
+        let balloonSpawnInterval;
+
+        function createBalloon() {
+            if (gameWon) return;
+            const balloon = document.createElement('div');
+            balloon.classList.add('balloon-element');
+            
+            const isTarget = Math.random() < 0.25; 
+            
+            if (isTarget) {
+                balloon.style.background = "radial-gradient(circle at 30% 30%, #ff6b6b, #d90429)";
+                balloon.style.color = "#d90429"; 
+                balloon.dataset.target = "true";
+                balloon.innerHTML = '<div class="balloon-face">😝</div>';
+            } else {
+                const hues = [0, 30, 60, 120, 180, 240, 280, 320];
+                const h = hues[Math.floor(Math.random() * hues.length)];
+                balloon.style.background = `radial-gradient(circle at 30% 30%, hsl(${h}, 80%, 75%), hsl(${h}, 60%, 55%))`;
+                balloon.style.color = `hsl(${h}, 60%, 55%)`;
+                balloon.innerHTML = '<div class="balloon-face">😊</div>';
+            }
+
+            balloon.style.left = Math.random() * 80 + 5 + 'vw';
+            const duration = Math.random() * 3 + 3.5;
+            balloon.style.animationDuration = duration + 's';
+
+            balloon.addEventListener('click', (e) => {
+                playSound('sfx-pop'); 
+                runConfetti({ 
+                    particleCount: 30, spread: 70, startVelocity: 25,
+                    origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight },
+                    colors: isTarget ? ['#ff0000', '#ff6b6b', '#ffffff'] : ['#ffffff', '#cccccc']
+                });
+                balloon.remove();
+
+                if (isTarget) {
+                    gameWon = true;
+                    clearInterval(balloonSpawnInterval);
+                    playSound('sfx-win'); 
+                    document.querySelectorAll('.balloon-element').forEach(el => el.remove());
+                    document.getElementById('balloon-instruction').classList.add('hidden');
+                    const revealContainer = document.getElementById('reveal-container');
+                    revealContainer.classList.remove('hidden');
+                    
+                    setTimeout(() => { document.getElementById('reveal-image').classList.add('show-image'); }, 100);
+                    setTimeout(() => {
+                        const toCakeBtn = document.getElementById('to-cake-btn');
+                        toCakeBtn.classList.remove('hidden');
+                        toCakeBtn.classList.add('pop-up-card');
+                    }, 700);
+                    
+                    runConfetti({ particleCount: 150, spread: 100, startVelocity: 40, origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight }, colors: ['#ff0000', '#ff6b6b', '#ffffff', '#ffd700', '#55a8e2'] });
+                    setTimeout(() => { runConfetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } }); }, 200);
+                }
+            });
+
+            const balloonScreen = document.getElementById('balloon-screen');
+            if(balloonScreen) balloonScreen.appendChild(balloon);
+            setTimeout(() => { if (balloon.parentNode) balloon.remove(); }, duration * 1000);
+        }
+
+        balloonSpawnInterval = setInterval(createBalloon, 700);
+
+        function goToCakeScreen() {
+            document.getElementById('balloon-screen').classList.add('hidden');
+            document.getElementById('cake-screen').classList.remove('hidden');
+            initCandleMicDetection(); 
+        }
+
+        // --- 4. ระบบ Safe Mic สำหรับเป่าเค้ก ---
+        let candleLit = true;
+        let audioStream = null;
+
+        function initCandleMicDetection() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                document.getElementById('mic-status').innerText = "⚠️ เบราว์เซอร์บล็อกระบบไมค์ (ต้องใช้ HTTPS) ให้ใช้นิ้วจิ้มที่ไฟเพื่อเป่าแทนนะครับ";
+                document.getElementById('mic-status').style.color = "#ff6b97";
+                return;
+            }
+
+            navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                audioStream = stream;
+                document.getElementById('mic-status').innerText = "🎤 ไมค์ทำงานแล้ว! ลองเป่าลมใส่รูไมค์แรงๆ ได้เลย";
+                document.getElementById('mic-status').style.color = "#1db954";
+                
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioContext.createAnalyser();
+                const microphone = audioContext.createMediaStreamSource(stream);
+                
+                microphone.connect(analyser);
+                analyser.fftSize = 512;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                function checkBlowSound() {
+                    if (!candleLit) return;
+                    analyser.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for (let i = 0; i < bufferLength; i++) { sum += dataArray[i]; }
+                    if ((sum / bufferLength) > 55) { extinguishCandle(); } 
+                    else { requestAnimationFrame(checkBlowSound); }
+                }
+                requestAnimationFrame(checkBlowSound);
+            })
+            .catch(err => {
+                document.getElementById('mic-status').innerText = "⚠️ ไม่สามารถเปิดไมค์ได้ ใช้นิ้วจิ้มที่ไฟเพื่อเป่าแทนได้นะ";
+                document.getElementById('mic-status').style.color = "#ff6b97";
+            });
+        }
+
+        function extinguishCandle() {
+            if (!candleLit) return;
+            candleLit = false;
+            document.getElementById('candle-flame').style.display = 'none';
+            document.getElementById('mic-status').innerHTML = "🎉 ขอให้คําอธิษฐานของเนมเป็นจริง 🎉";
+            document.getElementById('mic-status').style.color = '#1db954';
+            if (audioStream) { audioStream.getTracks().forEach(track => track.stop()); }
+
+            runConfetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
+            playSound('sfx-win'); 
+
+            const enterBtn = document.getElementById('enter-site-btn');
+            enterBtn.classList.remove('hidden');
+            enterBtn.classList.add('fade-in');
+        }
+
+        function enterMainSite() {
+            document.getElementById('cake-screen').classList.add('hidden');
+            document.getElementById('main-container').classList.remove('hidden');
+            document.getElementById('main-container').classList.add('fade-in');
+
+            // --- Auto-play สั่งให้เล่นเพลงหลักเมื่อเข้าหน้าเว็บ (เข็มจะขยับตาม Event อัตโนมัติ) ---
+            if(audioBg) {
+                const playPromise = audioBg.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(err => console.log("เบราว์เซอร์ยังไม่ให้ Auto-play รอให้ผู้ใช้กด Play เอง", err));
+                }
+            }
+        }
+
+        // --- 5. สับโพลารอยด์ ---
+        let isAnimating = false;
+        function nextPhoto() {
+            if (isAnimating) return;
+            isAnimating = true;
+            playSound('sfx-photo'); 
+            const container = document.getElementById('polaroid-container');
+            const polaroids = container.querySelectorAll('.polaroid');
+            const topPolaroid = polaroids[polaroids.length - 1];
+            topPolaroid.classList.add('slide-out');
+            setTimeout(() => {
+                topPolaroid.classList.remove('slide-out');
+                container.insertBefore(topPolaroid, container.firstChild);
+                topPolaroid.style.transform = `rotate(${(Math.random() * 12) - 6}deg)`;
+                isAnimating = false;
+            }, 400);
+        }
+
+        function scrollCarousel(direction) {
+            const wrapper = document.getElementById('carousel-wrapper');
+            const cardWidth = wrapper.querySelector('.card').offsetWidth + 15;
+            wrapper.scrollBy({ left: direction * cardWidth, behavior: 'smooth' });
+        }
+
+        // --- 6. ควบคุมเครื่องเล่นแผ่นเสียงและ Spotify ลับ (อัปเดตแบบดัก Event 100%) ---
+        const audioBg = document.getElementById('bg-music');
+        const playBtn = document.getElementById('play-btn');
+        const vinylRecord = document.getElementById('vinyl-record');
+        const vinylTonearm = document.getElementById('vinyl-tonearm');
+        
+        const secretVoice = document.getElementById('secret-voice');
+        const sPlayBtn = document.getElementById('s-play-btn');
+        const sProgress = document.getElementById('s-progress');
+        const sCurrentTimeEl = document.getElementById('s-current-time');
+        const sDurationEl = document.getElementById('s-duration');
+
+        // ดัก Event การเล่นของเพลงหลักโดยตรง (คุม UI แผ่นเสียง)
+        if (audioBg) {
+            audioBg.addEventListener('play', () => {
+                if(playBtn) playBtn.querySelector('i').classList.replace('fa-play', 'fa-pause');
+                if(vinylRecord) vinylRecord.classList.add('vinyl-playing');
+                if(vinylTonearm) vinylTonearm.classList.add('tonearm-playing');
+            });
+
+            audioBg.addEventListener('pause', () => {
+                if(playBtn) playBtn.querySelector('i').classList.replace('fa-pause', 'fa-play');
+                if(vinylRecord) vinylRecord.classList.remove('vinyl-playing');
+                if(vinylTonearm) vinylTonearm.classList.remove('tonearm-playing');
+            });
+        }
+
+        if(playBtn) {
+            playBtn.addEventListener('click', () => {
+                if (audioBg.paused) {
+                    safePlayAudio(audioBg);
+                    // ถ้าเพลงลับเล่นอยู่ ให้หยุดก่อน
+                    if (secretVoice && !secretVoice.paused) {
+                        secretVoice.pause();
+                        if(sPlayBtn) sPlayBtn.innerHTML = '<i class="fas fa-play" style="margin-left: 2px;"></i>';
+                    }
+                } else {
+                    audioBg.pause();
+                }
+            });
+        }
+
+        // ระบบควบคุมเพลงลับ
+        function toggleSecretVoice() {
+            if(audioBg) audioBg.pause(); // สั่งหยุดเพลงหลักเลย (ตัวดัก Event จะพับเข็มแผ่นเสียงให้เอง)
+            
+            if (secretVoice.paused) {
+                safePlayAudio(secretVoice); 
+                if(sPlayBtn) sPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                secretVoice.pause(); 
+                if(sPlayBtn) sPlayBtn.innerHTML = '<i class="fas fa-play" style="margin-left: 2px;"></i>';
+            }
+        }
+
+        if(secretVoice) {
+            secretVoice.addEventListener('timeupdate', () => {
+                if(isNaN(secretVoice.duration)) return;
+                const percent = (secretVoice.currentTime / secretVoice.duration) * 100;
+                if(sProgress) sProgress.style.width = `${percent}%`;
+                if(sCurrentTimeEl) sCurrentTimeEl.innerText = formatTime(secretVoice.currentTime);
+                if(sDurationEl) sDurationEl.innerText = formatTime(secretVoice.duration);
+            });
+            secretVoice.addEventListener('ended', () => {
+                if(sPlayBtn) sPlayBtn.innerHTML = '<i class="fas fa-play" style="margin-left: 2px;"></i>';
+                if(sProgress) sProgress.style.width = `0%`; 
+                if(sCurrentTimeEl) sCurrentTimeEl.innerText = '0:00';
+            });
+        }
+
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            return `${min < 10 ? '0' : ''}${min}:${sec < 10 ? '0' : ''}${sec}`;
+        }
+
+        // --- 7. รหัสผ่าน มินิเกม & ของขวัญ ---
+        function moveFocus(current, nextId) {
+            if (current.value.length === 1) document.getElementById(nextId).focus();
+            document.getElementById('digit1').classList.remove('input-error');
+            document.getElementById('digit2').classList.remove('input-error');
+        }
+
+        function checkPasscode() {
+            const d1 = document.getElementById('digit1'); const d2 = document.getElementById('digit2');
+            if (d1.value !== '' && d2.value !== '') {
+                if (d1.value === '2' && d2.value === '6') {
+                    playSound('sfx-pass-ok'); 
+                    document.getElementById('passcode-section').classList.add('hidden');
+                    const secretContent = document.getElementById('secret-content');
+                    secretContent.classList.remove('hidden');
+                    setTimeout(() => { secretContent.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 150);
+                } else {
+                    playSound('sfx-pass-err'); 
+                    if (navigator.vibrate) { navigator.vibrate([150, 50, 150]); }
+                    const container = document.getElementById('passcode-container');
+                    container.classList.add('shake-error'); d1.classList.add('input-error'); d2.classList.add('input-error');
+                    setTimeout(() => { container.classList.remove('shake-error'); d1.value = ''; d2.value = ''; d1.focus(); }, 400);
+                }
+            }
+        }
+
+        function openGift() {
+            document.getElementById('gift-box').style.display = 'none';
+            document.getElementById('cards-section').classList.remove('hidden');
+            document.getElementById('first-card').classList.add('pop-up-card');
+            
+            playSound('sfx-gift'); 
+            
+            const end = Date.now() + 2500;
+            function frame() {
+                runConfetti({ particleCount: 4, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ff8fb3', '#55a8e2', '#ffffff'] });
+                runConfetti({ particleCount: 4, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ff8fb3', '#55a8e2', '#ffffff'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }
+            frame();
+        }
+
+        // --- 8. Safe Local Storage ป้องกันการแครช ---
+        const noteInput = document.getElementById('recipient-note');
+        try {
+            if(localStorage.getItem('birthdayNote') && noteInput) {
+                noteInput.value = localStorage.getItem('birthdayNote');
+            }
+        } catch(e) { console.warn("Local storage blocked"); }
+
+        function saveNote() { 
+            try { localStorage.setItem('birthdayNote', noteInput.value); } 
+            catch(e) { console.warn("Local storage blocked"); } 
+        }
+
+        let gameScore = 0; let gameTimeLeft = 26; let gameInterval; let heartMoveInterval;
+
+        function startGame() {
+            document.getElementById('start-game-btn').style.display = 'none';
+            document.getElementById('game-area').style.display = 'block';
+            gameScore = 0; gameTimeLeft = 26;
+            document.getElementById('game-score').innerText = gameScore;
+            document.getElementById('game-time').innerText = gameTimeLeft;
+            moveHeartRandomly();
+            gameInterval = setInterval(() => {
+                gameTimeLeft--; document.getElementById('game-time').innerText = gameTimeLeft;
+                if (gameTimeLeft <= 0) endGameGame(false);
+            }, 1000);
+            heartMoveInterval = setInterval(moveHeartRandomly, 900);
+        }
+
+        function moveHeartRandomly() {
+            const heart = document.getElementById('target-heart'); const area = document.getElementById('game-area');
+            const maxX = area.clientWidth - 35; const maxY = area.clientHeight - 55;
+            const randomX = Math.floor(Math.random() * maxX); const randomY = Math.floor(Math.random() * maxY) + 25;
+            heart.style.left = randomX + 'px'; heart.style.top = randomY + 'px';
+        }
+
+        function catchHeart() {
+            playSound('sfx-pop'); 
+            gameScore++; document.getElementById('game-score').innerText = gameScore;
+            
+            const heart = document.getElementById('target-heart');
+            heart.style.transform = 'scale(1.4)'; setTimeout(() => { heart.style.transform = 'scale(1)'; }, 100);
+            moveHeartRandomly();
+            if (gameScore >= 10) endGameGame(true);
+        }
+
+        function endGameGame(isWin) {
+            clearInterval(gameInterval); clearInterval(heartMoveInterval);
+            if (isWin) {
+                document.getElementById('mission-box').style.display = 'none';
+                document.getElementById('spotify-container').style.display = 'block';
+                playSound('sfx-win'); 
+                runConfetti({ particleCount: 80, spread: 60, origin: { y: 0.65 }, colors: ['#1db954', '#ffffff'] });
+            } else {
+                playSound('sfx-pass-err'); 
+                if (navigator.vibrate) { navigator.vibrate([100, 100, 100]); } 
+                alert("หมดเวลาซะแล้ว! พลาดไปนิดเดียวเอง ลองใหม่นะ ✌️");
+                document.getElementById('start-game-btn').style.display = 'inline-block';
+                document.getElementById('start-game-btn').innerText = 'ลองอีกครั้ง!';
+                document.getElementById('game-area').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
